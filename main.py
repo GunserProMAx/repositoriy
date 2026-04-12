@@ -209,7 +209,7 @@ async def button(update:Update, context:ContextTypes.DEFAULT_TYPE):
         await q.message.reply_text(
             "📘 КАК ВВОДИТЬ УРАВНЕНИЕ\n\n"
             "Пример:\n"
-            "x^2 - 5x + 6 = 0\n\n"
+            "1x^2 - 5x + 6 = 0\n\n"
             "Можно также:\n"
             "-2x^2 + 3x - 1 = 0"
         )
