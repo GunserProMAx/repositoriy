@@ -5,7 +5,7 @@ import cmath
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, CallbackQueryHandler, filters, ContextTypes
 
-TOKEN = "8226591826:AAGefyhkN9aeFd8KNiyDaLBkVtsDbKwQNPY"
+TOKEN = "8753287054:AAFGPljyRVJhhZlXMBpkrR3riyj5d6GVNP4"
 
 # =====================
 # 📊 СТАТИСТИКА
