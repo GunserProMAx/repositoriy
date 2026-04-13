@@ -150,7 +150,7 @@ async def handle(update:Update, context:ContextTypes.DEFAULT_TYPE):
             f"Ответ: {round(x1.real,2)}, {round(x2.real,2)}"
         )
     except:
-await update.message.reply_text("Ошибка ввода")
+        await update.message.reply_text("Ошибка ввода")
 
 # =====================
 # ▶️ ЗАПУСК
