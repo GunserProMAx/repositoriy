@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, CallbackQueryHandler, filters, ContextTypes
 
-TOKEN = "8753287054:AAFGPljyRVJhhZlXMBpkrR3riyj5d6GVNP4"
+TOKEN = "8226591826:AAGefyhkN9aeFd8KNiyDaLBkVtsDbKwQNPY"
 
 # =====================
-# 🎨 Красивый вывод уравнения
+# 🎨 Формат уравнения
 # =====================
 def format_eq(a,b,c):
     def s(n):
@@ -35,28 +35,25 @@ def format_eq(a,b,c):
     return eq + "= 0"
 
 # =====================
-# 🧠 Парсер
+# 🧠 PARSE (a,b,c)
 # =====================
-def parse(eq):
-    eq = eq.replace(" ", "").replace("=0", "")
+def parse_input(text):
+    parts = text.replace(" ", "").split(",")
 
-    eq = eq.replace("-x^2", "-1x^2").replace("+x^2", "+1x^2")
-    eq = eq.replace("-x", "-1x").replace("+x", "+1x")
+    if len(parts) != 3:
+        raise ValueError
 
-    a=b=c=0
+    a = float(parts[0])
+    b = float(parts[1])
+    c = float(parts[2])
 
-    a_m = re.search(r"([+-]?\d+)x\^2", eq)
-    b_m = re.search(r"([+-]?\d+)x(?!\^)", eq)
-    nums = re.findall(r"[+-]?\d+", eq)
-
-    if a_m: a=int(a_m.group(1))
-    if b_m: b=int(b_m.group(1))
-    if nums: c=int(nums[-1])
+    if a == 0:
+        raise ValueError
 
     return a,b,c
 
 # =====================
-# 📘 Решение
+# 📘 SOLVE
 # =====================
 def solve(a,b,c):
     D = b*b - 4*a*c
@@ -79,7 +76,7 @@ def disc(a,b,c,D,x1,x2):
 {format_eq(a,b,c)}
 
 D = {b}² - 4·{a}·{c}
-D = {D}
+D = {round(D,2)}
 
 x₁ = {fmt(x1)}
 x₂ = {fmt(x2)}
@@ -95,8 +92,8 @@ def vieta(a,b,c,x1,x2):
 
 {format_eq(a,b,c)}
 
-x₁ + x₂ = {-b/a}
-x₁ · x₂ = {c/a}
+x₁ + x₂ = {round(-b/a,2)}
+x₁ · x₂ = {round(c/a,2)}
 
 x₁ = {fmt(x1)}
 x₂ = {fmt(x2)}
@@ -104,7 +101,7 @@ x₂ = {fmt(x2)}
     return "❌ Виета не применима"
 
 # =====================
-# 📊 График
+# 📊 GRAPH
 # =====================
 def graph(a,b,c):
     x = np.linspace(-10,10,400)
@@ -122,7 +119,7 @@ def graph(a,b,c):
     return file
 
 # =====================
-# 🎯 Тренировка (любое a ≠ 0)
+# 🎯 Тренировка
 # =====================
 def generate_task():
     a = random.randint(-3,3)
@@ -142,8 +139,7 @@ def generate_task():
 # =====================
 def main_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📘 Уравнение (как вводить)",callback_data="info")],
-        [InlineKeyboardButton("➕ Ввести уравнение",callback_data="input")],
+        [InlineKeyboardButton("➕ Ввести коэффициенты",callback_data="input")],
         [InlineKeyboardButton("🎯 Тренировка",callback_data="train")]
     ])
 
@@ -167,15 +163,13 @@ def train_menu():
 # =====================
 async def start(update:Update, context:ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
-
     await update.message.reply_text(
-        "👋 Привет!\n\n"
-        "Я бот, решающий квадратные уравнения 📘",
+        "👋 Привет!\n\nЯ бот, решающий квадратные уравнения 📘",
         reply_markup=main_menu()
     )
 
 # =====================
-# 🧠 TEXT INPUT
+# 🧠 INPUT
 # =====================
 async def handle(update:Update, context:ContextTypes.DEFAULT_TYPE):
     text = update.message.text
@@ -184,18 +178,20 @@ async def handle(update:Update, context:ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        a,b,c = parse(text)
+        a,b,c = parse_input(text)
         D,x1,x2 = solve(a,b,c)
 
         context.user_data["data"]=(a,b,c,D,x1,x2)
 
         await update.message.reply_text(
-            "📘 Решение готово!",
+            f"📘 Уравнение:\n{format_eq(a,b,c)}",
             reply_markup=solve_menu()
         )
 
     except:
-        await update.message.reply_text("⚠️ ошибка")
+        await update.message.reply_text(
+            "⚠️ Неверный ввод\n\nПример:\n1, -5, 6"
+        )
 
 # =====================
 # 🎯 CALLBACK
@@ -204,26 +200,18 @@ async def button(update:Update, context:ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
 
-    # ===== INFO =====
-    if q.data == "info":
-        await q.message.reply_text(
-            "📘 КАК ВВОДИТЬ УРАВНЕНИЕ\n\n"
-            "Пример:\n"
-            "1x^2 - 5x + 6 = 0\n\n"
-            "Можно также:\n"
-            "-2x^2 + 3x - 1 = 0"
-        )
-        return
-
     if q.data == "menu":
         await q.message.reply_text("🏠 Меню", reply_markup=main_menu())
         return
 
     if q.data == "input":
-        await q.message.reply_text("✍️ Введи уравнение")
+        await q.message.reply_text(
+            "✍️ Введи коэффициенты a, b, c через запятую\n\n"
+            "Пример:\n1, -5, 6"
+        )
         return
 
-    # ===== TRAIN =====
+    # TRAIN
     if q.data == "train":
         eq,a,b,c,x1,x2 = generate_task()
         context.user_data["train"] = (a,b,c,x1,x2)
@@ -243,7 +231,7 @@ async def button(update:Update, context:ContextTypes.DEFAULT_TYPE):
         await q.message.reply_text(f"⚡ x₁={x1}, x₂={x2}")
         return
 
-    # ===== SOLVE =====
+    # SOLVE
     a,b,c,D,x1,x2 = context.user_data.get("data",(0,0,0,0,0,0))
 
     if q.data == "disc":
