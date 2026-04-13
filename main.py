@@ -1,11 +1,9 @@
 
 import random
 import cmath
-import numpy as np
-import matplotlib.pyplot as plt
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, CallbackQueryHandler, Filters, ContextTypes
+from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, CallbackQueryHandler, filters, ContextTypes
 
 TOKEN = "8226591826:AAGefyhkN9aeFd8KNiyDaLBkVtsDbKwQNPY"
 
@@ -16,12 +14,11 @@ def init_user(context):
     if "stats" not in context.user_data:
         context.user_data["stats"] = {
             "solved": 0,
-            "train": 0,
             "correct": 0
         }
 
 # =====================
-# 🎨 ФОРМАТ
+# 🎨 УРАВНЕНИЕ
 # =====================
 def format_eq(a,b,c):
     def s(n): return f"+ {n}" if n>0 else f"- {abs(n)}"
@@ -31,7 +28,7 @@ def format_eq(a,b,c):
     return eq + "= 0"
 
 # =====================
-# 🧠 SOLVE
+# 🧠 РЕШЕНИЕ
 # =====================
 def solve(a,b,c):
     D = b*b - 4*a*c
@@ -43,9 +40,9 @@ def solve(a,b,c):
 # 🎯 ГЕНЕРАЦИЯ
 # =====================
 def gen_task():
-    a = random.choice([-3,-2,-1,1,2,3])
-    x1 = random.randint(-5,5)
-    x2 = random.randint(-5,5)
+    a = random.choice([-10,-9,-8.-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9,10])
+    x1 = random.randint(-10,10)
+    x2 = random.randint(--10,10)
     b = -(x1+x2)*a
     c = x1*x2*a
     return a,b,c,x1,x2
@@ -56,7 +53,6 @@ def gen_task():
 def menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("➕ Ввести коэффициенты",callback_data="input")],
-        [InlineKeyboardButton("🎯 Тренировка",callback_data="train")],
         [InlineKeyboardButton("🎓 Экзамен",callback_data="exam")],
         [InlineKeyboardButton("📊 Статистика",callback_data="stats")]
     ])
@@ -69,7 +65,7 @@ async def start(update:Update, context:ContextTypes.DEFAULT_TYPE):
     init_user(context)
 
     await update.message.reply_text(
-        "👋 Привет!\n\nЯ бот, решающий квадратные уравнения 📘",
+        "👋 Привет!\nЯ бот для квадратных уравнений",
         reply_markup=menu()
     )
 
@@ -80,48 +76,8 @@ async def show_stats(update, context):
     s = context.user_data["stats"]
 
     await update.callback_query.message.reply_text(
-        f"""
-📊 Статистика
-
-Решено: {s['solved']}
-Тренировок: {s['train']}
-Правильно: {s['correct']}
-"""
+        f"📊 Решено: {s['solved']}\nПравильно: {s['correct']}"
     )
-
-# =====================
-# 🎯 CALLBACK
-# =====================
-async def button(update:Update, context:ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    init_user(context)
-
-    # ===== MENU =====
-    if q.data == "input":
-        await q.message.reply_text("Введи: a, b, c\nПример: 1, -5, 6")
-        return
-
-    if q.data == "stats":
-        await show_stats(update, context)
-        return
-
-    # ===== TRAIN =====
-    if q.data == "train":
-        a,b,c,x1,x2 = gen_task()
-        context.user_data["train"]=(a,b,c,x1,x2)
-
-        await q.message.reply_text(f"🎯 {format_eq(a,b,c)}")
-        return
-
-    # ===== EXAM =====
-    if q.data == "exam":
-        context.user_data["exam"] = {
-            "q": 0,
-            "score": 0
-        }
-        await next_exam(q.message, context)
-        return
 
 # =====================
 # 🎓 ЭКЗАМЕН
@@ -130,9 +86,8 @@ async def next_exam(msg, context):
     exam = context.user_data["exam"]
 
     if exam["q"] >= 5:
-        await msg.reply_text(
-            f"🏁 Экзамен завершён!\nРезультат: {exam['score']}/5"
-        )
+        await msg.reply_text(f"🏁 Результат: {exam['score']}/5")
+        context.user_data.pop("exam")
         return
 
     a,b,c,x1,x2 = gen_task()
@@ -141,12 +96,29 @@ async def next_exam(msg, context):
     exam["q"] += 1
 
     await msg.reply_text(
-        f"🎓 Задание {exam['q']}:\n{format_eq(a,b,c)}\n\n"
-        "Введи корни через запятую"
+        f"🎓 Задание {exam['q']}:\n{format_eq(a,b,c)}\n\nВведи корни через запятую"
     )
 
 # =====================
-# 🧠 HANDLE TEXT
+# 🎛 КНОПКИ
+# =====================
+async def button(update:Update, context:ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    init_user(context)
+
+    if q.data == "input":
+        await q.message.reply_text("Введи: a, b, c\nПример: 1, -5, 6")
+
+    elif q.data == "stats":
+        await show_stats(update, context)
+
+    elif q.data == "exam":
+        context.user_data["exam"] = {"q":0,"score":0}
+        await next_exam(q.message, context)
+
+# =====================
+# 🧠 ВВОД
 # =====================
 async def handle(update:Update, context:ContextTypes.DEFAULT_TYPE):
     text = update.message.text
@@ -159,16 +131,15 @@ async def handle(update:Update, context:ContextTypes.DEFAULT_TYPE):
             x1,x2 = context.user_data["exam_task"]
 
             if set([round(x1,2), round(x2,2)]) == set([round(user[0],2), round(user[1],2)]):
-context.user_data["exam"]["score"] += 1
+                context.user_data["exam"]["score"] += 1
                 context.user_data["stats"]["correct"] += 1
 
             await next_exam(update.message, context)
-            return
         except:
             await update.message.reply_text("Ошибка ввода")
-            return
+        return
 
-    # ===== ОБЫЧНЫЙ РЕЖИМ =====
+    # ===== ОБЫЧНЫЙ =====
     try:
         a,b,c = [float(x) for x in text.split(",")]
         x1,x2 = solve(a,b,c)
@@ -179,4 +150,16 @@ context.user_data["exam"]["score"] += 1
             f"Ответ: {round(x1.real,2)}, {round(x2.real,2)}"
         )
     except:
-        await update.message.reply_text("Ошибка ввода")
+await update.message.reply_text("Ошибка ввода")
+
+# =====================
+# ▶️ ЗАПУСК
+# =====================
+app = ApplicationBuilder().token(TOKEN).build()
+
+app.add_handler(CommandHandler("start", start))
+app.add_handler(MessageHandler(filters.TEXT, handle))
+app.add_handler(CallbackQueryHandler(button))
+
+print("🔥 BOT RUNNING")
+app.run_polling()
