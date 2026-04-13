@@ -1,5 +1,4 @@
 
-import re
 import random
 import cmath
 import numpy as np
@@ -11,151 +10,55 @@ from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, Cal
 TOKEN = "8226591826:AAGefyhkN9aeFd8KNiyDaLBkVtsDbKwQNPY"
 
 # =====================
-# 🎨 Формат уравнения
+# 📊 СТАТИСТИКА
+# =====================
+def init_user(context):
+    if "stats" not in context.user_data:
+        context.user_data["stats"] = {
+            "solved": 0,
+            "train": 0,
+            "correct": 0
+        }
+
+# =====================
+# 🎨 ФОРМАТ
 # =====================
 def format_eq(a,b,c):
-    def s(n):
-        return f"+ {n}" if n > 0 else f"- {abs(n)}"
-
-    eq = ""
-
-    if a == 1:
-        eq += "x² "
-    elif a == -1:
-        eq += "-x² "
-    else:
-        eq += f"{a}x² "
-
-    if b != 0:
-        eq += f"{s(b)}x "
-
-    if c != 0:
-        eq += f"{s(c)} "
-
+    def s(n): return f"+ {n}" if n>0 else f"- {abs(n)}"
+    eq = f"{a}x² " if a not in [1,-1] else ("x² " if a==1 else "-x² ")
+    if b: eq += f"{s(b)}x "
+    if c: eq += f"{s(c)} "
     return eq + "= 0"
 
 # =====================
-# 🧠 PARSE (a,b,c)
-# =====================
-def parse_input(text):
-    parts = text.replace(" ", "").split(",")
-
-    if len(parts) != 3:
-        raise ValueError
-
-    a = float(parts[0])
-    b = float(parts[1])
-    c = float(parts[2])
-
-    if a == 0:
-        raise ValueError
-
-    return a,b,c
-
-# =====================
-# 📘 SOLVE
+# 🧠 SOLVE
 # =====================
 def solve(a,b,c):
     D = b*b - 4*a*c
     x1 = (-b + cmath.sqrt(D))/(2*a)
     x2 = (-b - cmath.sqrt(D))/(2*a)
-    return D,x1,x2
-
-def fmt(x):
-    if abs(x.imag)<1e-10:
-        return round(x.real,2)
-    return complex(round(x.real,2), round(x.imag,2))
+    return x1,x2
 
 # =====================
-# 🧠 Дискриминант
+# 🎯 ГЕНЕРАЦИЯ
 # =====================
-def disc(a,b,c,D,x1,x2):
-    return f"""
-📘 ДИСКРИМИНАНТ
-
-{format_eq(a,b,c)}
-
-D = {b}² - 4·{a}·{c}
-D = {round(D,2)}
-
-x₁ = {fmt(x1)}
-x₂ = {fmt(x2)}
-"""
-
-# =====================
-# 🧠 Виета
-# =====================
-def vieta(a,b,c,x1,x2):
-    if abs(x1.imag)<1e-10:
-        return f"""
-🧠 ВИЕТА
-
-{format_eq(a,b,c)}
-
-x₁ + x₂ = {round(-b/a,2)}
-x₁ · x₂ = {round(c/a,2)}
-
-x₁ = {fmt(x1)}
-x₂ = {fmt(x2)}
-"""
-    return "❌ Виета не применима"
-
-# =====================
-# 📊 GRAPH
-# =====================
-def graph(a,b,c):
-    x = np.linspace(-10,10,400)
-    y = a*x**2 + b*x + c
-
-    plt.figure()
-    plt.grid()
-    plt.axhline(0)
-    plt.axvline(0)
-    plt.plot(x,y)
-
-    file="graph.png"
-    plt.savefig(file)
-    plt.close()
-    return file
-
-# =====================
-# 🎯 Тренировка
-# =====================
-def generate_task():
-    a = random.randint(-3,3)
-    if a == 0:
-        a = 1
-
+def gen_task():
+    a = random.choice([-3,-2,-1,1,2,3])
     x1 = random.randint(-5,5)
     x2 = random.randint(-5,5)
-
-    b = -(x1 + x2) * a
-    c = x1 * x2 * a
-
-    return format_eq(a,b,c), a,b,c,x1,x2
+    b = -(x1+x2)*a
+    c = x1*x2*a
+    return a,b,c,x1,x2
 
 # =====================
 # 🎛 МЕНЮ
 # =====================
-def main_menu():
+def menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("➕ Ввести коэффициенты",callback_data="input")],
-        [InlineKeyboardButton("🎯 Тренировка",callback_data="train")]
-    ])
-
-def solve_menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📘 Дискриминант",callback_data="disc")],
-        [InlineKeyboardButton("🧠 Виета",callback_data="vieta")],
-        [InlineKeyboardButton("📊 График",callback_data="graph")],
-        [InlineKeyboardButton("🏠 Меню",callback_data="menu")]
-    ])
-
-def train_menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("⚡ Ответ",callback_data="tans")],
-        [InlineKeyboardButton("🔁 Новое",callback_data="new")],
-        [InlineKeyboardButton("🏠 Меню",callback_data="menu")]
+        [InlineKeyboardButton("🎯 Тренировка",callback_data="train")],
+        [InlineKeyboardButton("🎓 Экзамен",callback_data="exam")],
+        [InlineKeyboardButton("📊 Статистика",callback_data="stats")]
     ])
 
 # =====================
@@ -163,35 +66,28 @@ def train_menu():
 # =====================
 async def start(update:Update, context:ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
+    init_user(context)
+
     await update.message.reply_text(
         "👋 Привет!\n\nЯ бот, решающий квадратные уравнения 📘",
-        reply_markup=main_menu()
+        reply_markup=menu()
     )
 
 # =====================
-# 🧠 INPUT
+# 📊 СТАТИСТИКА
 # =====================
-async def handle(update:Update, context:ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
+async def show_stats(update, context):
+    s = context.user_data["stats"]
 
-    if text.startswith("/"):
-        return
+    await update.callback_query.message.reply_text(
+        f"""
+📊 Статистика
 
-    try:
-        a,b,c = parse_input(text)
-        D,x1,x2 = solve(a,b,c)
-
-        context.user_data["data"]=(a,b,c,D,x1,x2)
-
-        await update.message.reply_text(
-            f"📘 Уравнение:\n{format_eq(a,b,c)}",
-            reply_markup=solve_menu()
-        )
-
-    except:
-        await update.message.reply_text(
-            "⚠️ Неверный ввод\n\nПример:\n1, -5, 6"
-        )
+Решено: {s['solved']}
+Тренировок: {s['train']}
+Правильно: {s['correct']}
+"""
+    )
 
 # =====================
 # 🎯 CALLBACK
@@ -199,59 +95,88 @@ async def handle(update:Update, context:ContextTypes.DEFAULT_TYPE):
 async def button(update:Update, context:ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
+    init_user(context)
 
-    if q.data == "menu":
-        await q.message.reply_text("🏠 Меню", reply_markup=main_menu())
+    # ===== MENU =====
+    if q.data == "input":
+        await q.message.reply_text("Введи: a, b, c\nПример: 1, -5, 6")
         return
 
-    if q.data == "input":
-        await q.message.reply_text(
-            "✍️ Введи коэффициенты a, b, c через запятую\n\n"
-            "Пример:\n1, -5, 6"
+    if q.data == "stats":
+        await show_stats(update, context)
+        return
+
+    # ===== TRAIN =====
+    if q.data == "train":
+        a,b,c,x1,x2 = gen_task()
+        context.user_data["train"]=(a,b,c,x1,x2)
+
+        await q.message.reply_text(f"🎯 {format_eq(a,b,c)}")
+        return
+
+    # ===== EXAM =====
+    if q.data == "exam":
+        context.user_data["exam"] = {
+            "q": 0,
+            "score": 0
+        }
+        await next_exam(q.message, context)
+        return
+
+# =====================
+# 🎓 ЭКЗАМЕН
+# =====================
+async def next_exam(msg, context):
+    exam = context.user_data["exam"]
+
+    if exam["q"] >= 5:
+        await msg.reply_text(
+            f"🏁 Экзамен завершён!\nРезультат: {exam['score']}/5"
         )
         return
 
-    # TRAIN
-    if q.data == "train":
-        eq,a,b,c,x1,x2 = generate_task()
-        context.user_data["train"] = (a,b,c,x1,x2)
+    a,b,c,x1,x2 = gen_task()
+    context.user_data["exam_task"] = (x1,x2)
 
-        await q.message.reply_text(f"🎯 Реши:\n{eq}", reply_markup=train_menu())
-        return
+    exam["q"] += 1
 
-    if q.data == "new":
-        eq,a,b,c,x1,x2 = generate_task()
-        context.user_data["train"] = (a,b,c,x1,x2)
-
-        await q.message.reply_text(f"🎯 Новое:\n{eq}", reply_markup=train_menu())
-        return
-
-    if q.data == "tans":
-        a,b,c,x1,x2 = context.user_data["train"]
-        await q.message.reply_text(f"⚡ x₁={x1}, x₂={x2}")
-        return
-
-    # SOLVE
-    a,b,c,D,x1,x2 = context.user_data.get("data",(0,0,0,0,0,0))
-
-    if q.data == "disc":
-        await q.message.reply_text(disc(a,b,c,D,x1,x2))
-
-    elif q.data == "vieta":
-        await q.message.reply_text(vieta(a,b,c,x1,x2))
-
-    elif q.data == "graph":
-        img = graph(a,b,c)
-        await q.message.reply_photo(photo=open(img,"rb"))
+    await msg.reply_text(
+        f"🎓 Задание {exam['q']}:\n{format_eq(a,b,c)}\n\n"
+        "Введи корни через запятую"
+    )
 
 # =====================
-# ▶️ RUN
+# 🧠 HANDLE TEXT
 # =====================
-app = ApplicationBuilder().token(TOKEN).build()
+async def handle(update:Update, context:ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    init_user(context)
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.TEXT, handle))
-app.add_handler(CallbackQueryHandler(button))
+    # ===== ЭКЗАМЕН =====
+    if "exam" in context.user_data:
+        try:
+            user = [float(x) for x in text.split(",")]
+            x1,x2 = context.user_data["exam_task"]
 
-print("🔥 BOT READY")
-app.run_polling()
+            if set([round(x1,2), round(x2,2)]) == set([round(user[0],2), round(user[1],2)]):
+context.user_data["exam"]["score"] += 1
+                context.user_data["stats"]["correct"] += 1
+
+            await next_exam(update.message, context)
+            return
+        except:
+            await update.message.reply_text("Ошибка ввода")
+            return
+
+    # ===== ОБЫЧНЫЙ РЕЖИМ =====
+    try:
+        a,b,c = [float(x) for x in text.split(",")]
+        x1,x2 = solve(a,b,c)
+
+        context.user_data["stats"]["solved"] += 1
+
+        await update.message.reply_text(
+            f"Ответ: {round(x1.real,2)}, {round(x2.real,2)}"
+        )
+    except:
+        await update.message.reply_text("Ошибка ввода")
