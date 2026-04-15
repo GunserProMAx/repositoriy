@@ -138,7 +138,8 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(result)
         await update.message.reply_text(
             "Что дальше?",
-            reply
+            reply_markup=train_menu()
+        )
 
 
 in_menu()
