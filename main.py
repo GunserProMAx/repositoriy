@@ -154,4 +154,4 @@ app.add_handler(CallbackQueryHandler(buttons))
 app.add_handler(MessageHandler(filters.TEXT, handle))
 
 print("🔥 BOT RUNNING")
-app.run_polling()_markup=tra
+app.run_polling()
