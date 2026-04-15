@@ -1,6 +1,6 @@
 
 import os
-from openai import OpenAI
+from groq import Groq
 
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters, ContextTypes
@@ -9,25 +9,25 @@ from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, fil
 # 🔑 КЛЮЧИ
 # =====================
 TELEGRAM_TOKEN = os.getenv("TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = Groq(api_key=GROQ_API_KEY)
 
 # =====================
-# 🧠 GPT ФУНКЦИЯ
+# 🧠 GROQ ФУНКЦИЯ
 # =====================
-def ask_gpt(user_text):
+def ask_ai(user_text):
     response = client.chat.completions.create(
-        model="gpt-4.1-mini",
+        model="llama3-70b-8192",
         messages=[
             {
                 "role": "system",
                 "content": (
                     "Ты учитель математики. "
                     "Решай квадратные уравнения пошагово. "
-                    "Если пользователь указал метод (Виета, дискриминант или другой) — используй его. "
+                    "Если пользователь указал метод (Виета или дискриминант) — используй его. "
                     "Если нет — решай через дискриминант. "
-                    "Пиши понятно и красиво, как в учебнике."
+                    "Объясняй просто и понятно, как в учебнике."
                 )
             },
             {
@@ -46,7 +46,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Я умный бот по квадратным уравнениям 🤖\n\n"
         "Напиши:\n"
-        "Реши x^2 - 5x + 6 через теорему Виета"
+        "реши x^2 - 5x + 6 через виета"
     )
 
 # =====================
@@ -56,12 +56,12 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
 
     try:
-        answer = ask_gpt(user_text)
+        answer = ask_ai(user_text)
         await update.message.reply_text(answer)
 
     except Exception as e:
-        print("GPT ERROR:", e)
-        await update.message.reply_text(f"⚠️ Ошибка GPT:\n{e}")
+        print("GROQ ERROR:", e)
+        await update.message.reply_text(f"⚠️ Ошибка:\n{e}")
 
 # =====================
 # ▶️ ЗАПУСК
@@ -71,5 +71,5 @@ app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT, handle))
 
-print("🔥 GPT BOT RUNNING")
+print("🔥 GROQ BOT RUNNING")
 app.run_polling()
