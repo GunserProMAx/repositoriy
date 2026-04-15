@@ -60,7 +60,8 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(answer)
 
     except Exception as e:
-        await update.message.reply_text("⚠️ Ошибка GPT")
+        print("GPT ERROR:", e)
+        await update.message.reply_text(f"⚠️ Ошибка GPT:\n{e}")
 
 # =====================
 # ▶️ ЗАПУСК
