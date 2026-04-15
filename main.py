@@ -141,10 +141,6 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=train_menu()
         )
 
-
-in_menu()
-        )
-
     else:
         await update.message.reply_text("Выбери режим", reply_markup=menu())
 
