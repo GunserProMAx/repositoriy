@@ -18,14 +18,14 @@ client = Groq(api_key=GROQ_API_KEY)
 # =====================
 def ask_ai(user_text):
     response = client.chat.completions.create(
-        model="llama3-70b-8192",
+        model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
                 "content": (
                     "Ты учитель математики. "
                     "Решай квадратные уравнения пошагово. "
-                    "Если пользователь указал метод (Виета или дискриминант) — используй его. "
+                    "Если пользователь указал метод (Виета, дискриминант или другой) — используй его. "
                     "Если нет — решай через дискриминант. "
                     "Объясняй просто и понятно, как в учебнике."
                 )
@@ -46,7 +46,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Я умный бот по квадратным уравнениям 🤖\n\n"
         "Напиши:\n"
-        "реши x^2 - 5x + 6 через виета"
+        "Реши x^2 - 5x + 6 через теорему Виета"
     )
 
 # =====================
