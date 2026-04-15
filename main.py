@@ -95,9 +95,11 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if query.data == "solve":
         context.user_data["mode"] = "solve"
-        await query.message.reply_text("✏️ Введи задание"
-                                      "Например:"
-                                      "Реши x^2-5x+6 через теорему Виета")
+        await query.message.reply_text(
+            "✏️ Введи задание"
+            "Например:"
+            "Реши x^2-5x+6 через теорему Виета"
+        )
 
     elif query.data == "train":
         context.user_data["mode"] = "train"
