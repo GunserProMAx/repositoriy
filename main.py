@@ -1,4 +1,5 @@
 
+import random
 import os
 from groq import Groq
 
@@ -41,16 +42,22 @@ def check_ai(task, answer):
     return res.choices[0].message.content
 
 def generate_ai_task():
+    seed = random.randint(1,100000)
+
     res = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
+        temperature=1,
         messages=[
             {
                 "role": "system",
-                "content": "Генерируй разные квадратные уравнения с целыми корнями. Только уравнение без объяснений. Выдавай их по очередию. Если они законились сгенерируй новые."
+                "content": (
+                    f"Сгенерируй квадратное уравнение №{seed} "
+                    "с целыми корнями. Каждый раз разное."
+                )
             }
         ]
     )
-    return res.choices[0].message.content
+    return res.choices[0].message.content.strip()
 
 # =====================
 # 📋 МЕНЮ
